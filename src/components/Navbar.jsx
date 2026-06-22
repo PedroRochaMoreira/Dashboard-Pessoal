@@ -40,6 +40,11 @@ export default function Navbar() {
     <>
       <header className="navbar">
         <div className="navbar-brand">
+          <span className="brand-mark">
+            <span />
+            <span />
+            <span />
+          </span>
           <span>Painel — PP</span>
         </div>
 

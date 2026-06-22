@@ -70,7 +70,9 @@ export default function Estudos() {
   return (
     <main className="page">
       <div className="page-header">
-        <BookOpen size={18} />
+        <div className="page-icon-badge estudos">
+          <BookOpen size={18} />
+        </div>
         <div>
           <span className="page-comment">// estudos</span>
           <h2 className="page-title">Matérias</h2>

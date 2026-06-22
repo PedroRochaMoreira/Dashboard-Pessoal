@@ -96,7 +96,9 @@ export default function Financeiro() {
   return (
     <main className="page">
       <div className="page-header">
-        <Wallet size={18} />
+        <div className="page-icon-badge financeiro">
+          <Wallet size={18} />
+        </div>
         <div>
           <span className="page-comment">// financeiro</span>
           <h2 className="page-title">Movimentações</h2>

@@ -117,7 +117,9 @@ export default function Configuracoes() {
   return (
     <main className="page">
       <div className="page-header">
-        <Settings size={18} />
+        <div className="page-icon-badge config">
+          <Settings size={18} />
+        </div>
         <div>
           <span className="page-comment">// configurações</span>
           <h2 className="page-title">Configurações</h2>

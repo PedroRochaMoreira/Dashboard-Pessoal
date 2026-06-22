@@ -47,7 +47,9 @@ export default function Agenda() {
   return (
     <main className="page">
       <div className="page-header">
-        <Calendar size={18} />
+        <div className="page-icon-badge agenda">
+          <Calendar size={18} />
+        </div>
         <div>
           <span className="page-comment">// agenda</span>
           <h2 className="page-title">Compromissos</h2>
