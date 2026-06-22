@@ -755,6 +755,143 @@ a {
   background: #0c1018;
 }
 
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.week-day {
+  position: relative;
+  aspect-ratio: 0.8;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: background 0.15s ease;
+}
+
+.week-day:hover {
+  background: var(--surface-3);
+}
+
+.week-day-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.week-day-selected .week-day-name,
+.calendar-day-selected .week-day-name {
+  color: #0c1018;
+}
+
+.week-day-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  width: fit-content;
+}
+
+.view-toggle button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.view-toggle button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-row svg {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-row input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px 10px 36px;
+  font-size: 13px;
+  transition: border-color 0.15s ease;
+}
+
+.search-row input:focus {
+  border-color: var(--accent-agenda);
+}
+
+.tag-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 3px;
+}
+
+.search-result-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--accent-agenda);
+  margin-right: 6px;
+}
+
+.recurrence-icon {
+  color: var(--text-muted);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.repeat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.repeat-toggle input {
+  accent-color: var(--accent-agenda);
+  width: 15px;
+  height: 15px;
+}
+
 /* ---------- Chart toggle ---------- */
 .chart-toggle {
   display: flex;

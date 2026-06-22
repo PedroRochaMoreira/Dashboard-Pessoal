@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toKey } from '../utils/dateKey';
+import { taskOccursOn } from '../utils/recurrence';
 
 const WEEKDAYS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
 const MONTH_NAMES = [
@@ -15,14 +16,6 @@ export default function MonthCalendar({ tasks, selectedDate, onSelectDate }) {
   });
 
   const todayKey = toKey(new Date());
-
-  const daysWithTasks = useMemo(() => {
-    const set = new Set();
-    tasks.forEach((t) => {
-      if (t.date) set.add(t.date);
-    });
-    return set;
-  }, [tasks]);
 
   const cells = useMemo(() => {
     const firstOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
@@ -67,7 +60,7 @@ export default function MonthCalendar({ tasks, selectedDate, onSelectDate }) {
           const inMonth = date.getMonth() === viewDate.getMonth();
           const isToday = key === todayKey;
           const isSelected = key === selectedDate;
-          const hasTasks = daysWithTasks.has(key);
+          const hasTasks = tasks.some((t) => taskOccursOn(t, key));
 
           return (
             <button
