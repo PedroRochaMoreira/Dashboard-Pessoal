@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Calendar, Check, Plus, Trash2, Search, Repeat } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Calendar, Check, Plus, Trash2, Search, Repeat, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection';
 import MonthCalendar from '../components/MonthCalendar';
@@ -7,6 +7,13 @@ import WeekCalendar from '../components/WeekCalendar';
 import { toKey } from '../utils/dateKey';
 import { taskOccursOn, isTaskDoneOn, weekdayName, WEEKDAY_LONG } from '../utils/recurrence';
 import { tagColor } from '../utils/tagColor';
+import {
+  toOneSignalSendAfter,
+  requestNotificationPermission,
+  getNotificationPermission,
+  scheduleTaskNotification,
+  cancelTaskNotification,
+} from '../utils/notifications';
 
 function formatSelected(dateKey) {
   const today = toKey(new Date());
@@ -35,6 +42,16 @@ export default function Agenda() {
   const [viewMode, setViewMode] = useState('mes');
   const [searchQuery, setSearchQuery] = useState('');
   const [newTask, setNewTask] = useState({ time: '', title: '', tag: '', repeat: false });
+  const [notifPermission, setNotifPermission] = useState(null);
+
+  useEffect(() => {
+    getNotificationPermission().then(setNotifPermission);
+  }, []);
+
+  async function handleEnableNotifications() {
+    const granted = await requestNotificationPermission();
+    setNotifPermission(granted);
+  }
 
   const tasksForDay = tasks
     .filter((t) => taskOccursOn(t, selectedDate))
@@ -49,7 +66,7 @@ export default function Agenda() {
         .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
     : [];
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!newTask.title.trim()) return;
     const base = {
       date: selectedDate,
@@ -57,15 +74,37 @@ export default function Agenda() {
       title: newTask.title.trim(),
       tag: newTask.tag.trim() || 'Geral',
     };
+
     if (newTask.repeat) {
-      addItem({ ...base, recurrence: { type: 'weekly', weekday: new Date(selectedDate + 'T00:00:00').getDay() }, completedDates: [] });
-    } else {
-      addItem({ ...base, done: false });
+      addItem({
+        ...base,
+        recurrence: { type: 'weekly', weekday: new Date(selectedDate + 'T00:00:00').getDay() },
+        completedDates: [],
+      });
+      setNewTask({ time: '', title: '', tag: '', repeat: false });
+      return;
     }
+
+    let notificationId = null;
+    const hasRealTime = /^\d{1,2}:\d{2}$/.test(base.time);
+    if (hasRealTime && notifPermission) {
+      const [h, m] = base.time.split(':').map(Number);
+      const target = new Date(selectedDate + 'T00:00:00');
+      target.setHours(h, m, 0, 0);
+      if (target > new Date()) {
+        notificationId = await scheduleTaskNotification({
+          title: base.title,
+          message: `${base.time} · ${base.tag}`,
+          sendAfter: toOneSignalSendAfter(selectedDate, base.time),
+        });
+      }
+    }
+
+    addItem({ ...base, done: false, notificationId });
     setNewTask({ time: '', title: '', tag: '', repeat: false });
   }
 
-  function toggleDone(task) {
+  async function toggleDone(task) {
     if (task.recurrence) {
       const current = task.completedDates || [];
       const next = current.includes(selectedDate)
@@ -73,8 +112,19 @@ export default function Agenda() {
         : [...current, selectedDate];
       updateItem(task.id, { completedDates: next });
     } else {
-      updateItem(task.id, { done: !task.done });
+      const nowDone = !task.done;
+      if (nowDone && task.notificationId) {
+        await cancelTaskNotification(task.notificationId);
+      }
+      updateItem(task.id, { done: nowDone });
     }
+  }
+
+  async function handleRemove(task) {
+    if (task.notificationId) {
+      await cancelTaskNotification(task.notificationId);
+    }
+    removeItem(task.id);
   }
 
   const pending = tasksForDay.filter((t) => !isTaskDoneOn(t, selectedDate)).length;
@@ -90,6 +140,19 @@ export default function Agenda() {
           <h2 className="page-title">Compromissos</h2>
         </div>
       </div>
+
+      {notifPermission === false && (
+        <div className="card accent-agenda" style={{ marginBottom: 16 }}>
+          <div className="settings-actions" style={{ justifyContent: 'space-between', width: '100%' }}>
+            <span className="item-tag" style={{ margin: 0 }}>
+              Ative as notificações pra receber lembrete dos seus compromissos, mesmo com o app fechado.
+            </span>
+            <button className="btn btn-primary" onClick={handleEnableNotifications}>
+              Ativar notificações
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="search-row" style={{ marginBottom: 16 }}>
         <Search size={15} />
@@ -113,7 +176,7 @@ export default function Agenda() {
                 {!t.recurrence && (
                   <button
                     className={`check-btn ${t.done ? 'done' : ''}`}
-                    onClick={() => updateItem(t.id, { done: !t.done })}
+                    onClick={() => toggleDone(t)}
                     aria-label="Marcar como concluída"
                   >
                     {t.done && <Check size={12} />}
@@ -128,10 +191,11 @@ export default function Agenda() {
                     )}
                     {t.time !== '--:--' && t.time} {t.title}
                     {t.recurrence && <Repeat size={11} className="recurrence-icon" />}
+                    {t.notificationId && <Bell size={11} className="recurrence-icon" />}
                   </div>
                   <TagChip tag={t.tag} />
                 </div>
-                <button className="del-btn" onClick={() => removeItem(t.id)} aria-label="Remover">
+                <button className="del-btn" onClick={() => handleRemove(t)} aria-label="Remover">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -183,10 +247,11 @@ export default function Agenda() {
                       <div className={`item-title ${done ? 'done' : ''}`}>
                         {t.title}
                         {t.recurrence && <Repeat size={11} className="recurrence-icon" />}
+                        {t.notificationId && <Bell size={11} className="recurrence-icon" />}
                       </div>
                       <TagChip tag={t.tag} />
                     </div>
-                    <button className="del-btn" onClick={() => removeItem(t.id)} aria-label="Remover">
+                    <button className="del-btn" onClick={() => handleRemove(t)} aria-label="Remover">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -232,6 +297,11 @@ export default function Agenda() {
               <Repeat size={13} />
               Repetir toda {weekdayName(selectedDate)}
             </label>
+            {newTask.repeat && (
+              <span className="item-tag" style={{ margin: 0 }}>
+                Tarefas recorrentes ainda não recebem notificação — só as avulsas, por enquanto.
+              </span>
+            )}
           </div>
 
           {legacyTasks.length > 0 && (
@@ -250,7 +320,7 @@ export default function Agenda() {
                     >
                       Mover p/ hoje
                     </button>
-                    <button className="del-btn" onClick={() => removeItem(t.id)} aria-label="Remover">
+                    <button className="del-btn" onClick={() => handleRemove(t)} aria-label="Remover">
                       <Trash2 size={14} />
                     </button>
                   </div>
