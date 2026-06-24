@@ -1,10 +1,16 @@
-import { useRef, useState } from 'react';
-import { Settings, Download, AlertTriangle, Camera } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Settings, Download, AlertTriangle, Camera, Bell } from 'lucide-react';
 import { collection, deleteDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../hooks/useUserPreferences';
 import { db } from '../firebase';
 import { resizeImageToBase64 } from '../utils/resizeImage';
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  getOptedIn,
+  setOptedIn,
+} from '../utils/notifications';
 import Avatar from '../components/Avatar';
 
 const COLLECTIONS = ['tasks', 'transactions', 'subjects', 'recurringTransactions', 'studyDays'];
@@ -31,6 +37,31 @@ export default function Configuracoes() {
   const [confirmText, setConfirmText] = useState('');
   const [dangerError, setDangerError] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  const [notifPermission, setNotifPermission] = useState(null);
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const [notifBusy, setNotifBusy] = useState(false);
+
+  useEffect(() => {
+    getNotificationPermission().then(setNotifPermission);
+    getOptedIn().then(setNotifEnabled);
+  }, []);
+
+  async function handleToggleNotifications() {
+    setNotifBusy(true);
+    try {
+      if (!notifPermission) {
+        const granted = await requestNotificationPermission();
+        setNotifPermission(granted);
+        if (granted) setNotifEnabled(await getOptedIn());
+      } else {
+        const next = await setOptedIn(!notifEnabled);
+        setNotifEnabled(next);
+      }
+    } finally {
+      setNotifBusy(false);
+    }
+  }
 
   async function handleSaveName() {
     setNameMsg('');
@@ -226,6 +257,24 @@ export default function Configuracoes() {
             Alterar senha
           </button>
           {pwMsg && <span className="settings-success">{pwMsg}</span>}
+        </div>
+      </div>
+
+      {/* Notificações */}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <span className="settings-section-title">Notificações</span>
+        <div className="settings-actions" style={{ justifyContent: 'space-between', width: '100%' }}>
+          <span className="item-tag" style={{ margin: 0 }}>
+            {!notifPermission
+              ? 'Desativadas — ative pra receber lembrete dos seus compromissos.'
+              : notifEnabled
+              ? 'Ativadas — você recebe lembrete dos seus compromissos.'
+              : 'Pausadas — você não vai receber lembretes até reativar.'}
+          </span>
+          <button className="btn btn-primary" onClick={handleToggleNotifications} disabled={notifBusy}>
+            <Bell size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            {!notifPermission ? 'Ativar' : notifEnabled ? 'Desativar' : 'Reativar'}
+          </button>
         </div>
       </div>
 

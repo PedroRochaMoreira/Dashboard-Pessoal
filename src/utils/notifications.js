@@ -39,6 +39,29 @@ export function getNotificationPermission() {
   });
 }
 
+export function getOptedIn() {
+  return new Promise((resolve) => {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      resolve(Boolean(OneSignal.User.PushSubscription.optedIn));
+    });
+  });
+}
+
+export function setOptedIn(enabled) {
+  return new Promise((resolve) => {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async (OneSignal) => {
+      if (enabled) {
+        await OneSignal.User.PushSubscription.optIn();
+      } else {
+        await OneSignal.User.PushSubscription.optOut();
+      }
+      resolve(enabled);
+    });
+  });
+}
+
 export async function scheduleTaskNotification({ title, message, sendAfter }) {
   const res = await fetch('/api/schedule-notification', {
     method: 'POST',

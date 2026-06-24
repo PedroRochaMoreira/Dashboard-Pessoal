@@ -9,11 +9,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const url = `https://onesignal.com/api/v1/notifications/${notificationId}?app_id=${process.env.ONESIGNAL_APP_ID}`;
+    const url = `https://api.onesignal.com/notifications/${notificationId}?app_id=${process.env.ONESIGNAL_APP_ID}`;
     const response = await fetch(url, {
       method: 'DELETE',
       headers: {
-        Authorization: `Basic ${process.env.ONESIGNAL_REST_API_KEY}`,
+        Authorization: `Key ${process.env.ONESIGNAL_REST_API_KEY}`,
       },
     });
 

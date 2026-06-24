@@ -1375,6 +1375,33 @@ a {
   border-color: var(--accent-agenda);
 }
 
+.password-wrap {
+  position: relative;
+  display: flex;
+}
+
+.password-wrap input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.password-toggle:hover {
+  color: var(--text);
+}
+
 .auth-submit {
   background: linear-gradient(135deg, var(--accent-agenda), var(--accent-agenda-2));
   color: #0c1018;

@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Calendar, Check, Plus, Trash2, Search, Repeat, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFirestoreCollection } from '../hooks/useFirestoreCollection';
 import MonthCalendar from '../components/MonthCalendar';
 import WeekCalendar from '../components/WeekCalendar';
 import { toKey } from '../utils/dateKey';
-import { taskOccursOn, isTaskDoneOn, weekdayName, WEEKDAY_LONG } from '../utils/recurrence';
+import {
+  taskOccursOn,
+  isTaskDoneOn,
+  weekdayName,
+  WEEKDAY_LONG,
+  recurrenceLabel,
+  nextOccurrences,
+} from '../utils/recurrence';
 import { tagColor } from '../utils/tagColor';
 import {
   toOneSignalSendAfter,
@@ -41,8 +48,9 @@ export default function Agenda() {
   const [selectedDate, setSelectedDate] = useState(() => toKey(new Date()));
   const [viewMode, setViewMode] = useState('mes');
   const [searchQuery, setSearchQuery] = useState('');
-  const [newTask, setNewTask] = useState({ time: '', title: '', tag: '', repeat: false });
+  const [newTask, setNewTask] = useState({ time: '', title: '', tag: '', repeatMode: 'none', intervalDays: '' });
   const [notifPermission, setNotifPermission] = useState(null);
+  const toppedUpRef = useRef(new Set());
 
   useEffect(() => {
     getNotificationPermission().then(setNotifPermission);
@@ -66,6 +74,51 @@ export default function Agenda() {
         .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
     : [];
 
+  // Mantém umas 8 ocorrências futuras agendadas pra cada tarefa recorrente
+  // com horário definido. Roda uma vez por tarefa por sessão (a lista de
+  // tarefas muda toda hora por causa do tempo real, então sem essa guarda
+  // isso rodaria em loop).
+  async function topUpRecurringNotifications(task) {
+    if (!notifPermission) return;
+    if (!/^\d{1,2}:\d{2}$/.test(task.time)) return;
+
+    const todayKey = toKey(new Date());
+    const existing = task.notificationIds || {};
+    const futureCount = Object.keys(existing).filter((d) => d >= todayKey).length;
+    if (futureCount >= 4) return;
+
+    const upcoming = nextOccurrences(task, 8, todayKey);
+    const newEntries = {};
+    for (const dateKey of upcoming) {
+      if (existing[dateKey]) continue;
+      const [h, m] = task.time.split(':').map(Number);
+      const target = new Date(dateKey + 'T00:00:00');
+      target.setHours(h, m, 0, 0);
+      if (target <= new Date()) continue;
+
+      const id = await scheduleTaskNotification({
+        title: task.title,
+        message: `${task.time} · ${task.tag}`,
+        sendAfter: toOneSignalSendAfter(dateKey, task.time),
+      });
+      if (id) newEntries[dateKey] = id;
+    }
+    if (Object.keys(newEntries).length > 0) {
+      updateItem(task.id, { notificationIds: { ...existing, ...newEntries } });
+    }
+  }
+
+  useEffect(() => {
+    if (notifPermission === null) return;
+    tasks.forEach((t) => {
+      if (t.recurrence && !toppedUpRef.current.has(t.id)) {
+        toppedUpRef.current.add(t.id);
+        topUpRecurringNotifications(t);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasks, notifPermission]);
+
   async function handleAdd() {
     if (!newTask.title.trim()) return;
     const base = {
@@ -75,13 +128,18 @@ export default function Agenda() {
       tag: newTask.tag.trim() || 'Geral',
     };
 
-    if (newTask.repeat) {
-      addItem({
-        ...base,
-        recurrence: { type: 'weekly', weekday: new Date(selectedDate + 'T00:00:00').getDay() },
-        completedDates: [],
-      });
-      setNewTask({ time: '', title: '', tag: '', repeat: false });
+    if (newTask.repeatMode !== 'none') {
+      let recurrence = null;
+      if (newTask.repeatMode === 'weekly') {
+        recurrence = { type: 'weekly', weekday: new Date(selectedDate + 'T00:00:00').getDay() };
+      } else if (newTask.repeatMode === 'interval') {
+        const days = parseInt(newTask.intervalDays, 10);
+        if (!isNaN(days) && days >= 1) recurrence = { type: 'interval', days };
+      }
+      if (recurrence) {
+        addItem({ ...base, recurrence, completedDates: [], notificationIds: {} });
+      }
+      setNewTask({ time: '', title: '', tag: '', repeatMode: 'none', intervalDays: '' });
       return;
     }
 
@@ -101,16 +159,23 @@ export default function Agenda() {
     }
 
     addItem({ ...base, done: false, notificationId });
-    setNewTask({ time: '', title: '', tag: '', repeat: false });
+    setNewTask({ time: '', title: '', tag: '', repeatMode: 'none', intervalDays: '' });
   }
 
   async function toggleDone(task) {
     if (task.recurrence) {
       const current = task.completedDates || [];
-      const next = current.includes(selectedDate)
-        ? current.filter((d) => d !== selectedDate)
-        : [...current, selectedDate];
-      updateItem(task.id, { completedDates: next });
+      const willBeDone = !current.includes(selectedDate);
+      const next = willBeDone
+        ? [...current, selectedDate]
+        : current.filter((d) => d !== selectedDate);
+
+      const notifIds = { ...(task.notificationIds || {}) };
+      if (willBeDone && notifIds[selectedDate]) {
+        await cancelTaskNotification(notifIds[selectedDate]);
+        delete notifIds[selectedDate];
+      }
+      updateItem(task.id, { completedDates: next, notificationIds: notifIds });
     } else {
       const nowDone = !task.done;
       if (nowDone && task.notificationId) {
@@ -123,6 +188,9 @@ export default function Agenda() {
   async function handleRemove(task) {
     if (task.notificationId) {
       await cancelTaskNotification(task.notificationId);
+    }
+    if (task.notificationIds) {
+      await Promise.all(Object.values(task.notificationIds).map(cancelTaskNotification));
     }
     removeItem(task.id);
   }
@@ -185,13 +253,15 @@ export default function Agenda() {
                 <div className="item-body">
                   <div className="item-title">
                     {t.recurrence ? (
-                      <span className="search-result-date">toda {WEEKDAY_LONG[t.recurrence.weekday]}</span>
+                      <span className="search-result-date">{recurrenceLabel(t)}</span>
                     ) : (
                       <span className="search-result-date">{t.date}</span>
                     )}
                     {t.time !== '--:--' && t.time} {t.title}
                     {t.recurrence && <Repeat size={11} className="recurrence-icon" />}
-                    {t.notificationId && <Bell size={11} className="recurrence-icon" />}
+                    {(t.notificationId || (t.notificationIds && Object.keys(t.notificationIds).length > 0)) && (
+                      <Bell size={11} className="recurrence-icon" />
+                    )}
                   </div>
                   <TagChip tag={t.tag} />
                 </div>
@@ -247,7 +317,9 @@ export default function Agenda() {
                       <div className={`item-title ${done ? 'done' : ''}`}>
                         {t.title}
                         {t.recurrence && <Repeat size={11} className="recurrence-icon" />}
-                        {t.notificationId && <Bell size={11} className="recurrence-icon" />}
+                        {(t.notificationId || (t.notificationIds && Object.keys(t.notificationIds).length > 0)) && (
+                          <Bell size={11} className="recurrence-icon" />
+                        )}
                       </div>
                       <TagChip tag={t.tag} />
                     </div>
@@ -288,18 +360,32 @@ export default function Agenda() {
               </button>
             </div>
 
-            <label className="repeat-toggle">
-              <input
-                type="checkbox"
-                checked={newTask.repeat}
-                onChange={(e) => setNewTask({ ...newTask, repeat: e.target.checked })}
-              />
+            <div className="repeat-toggle">
               <Repeat size={13} />
-              Repetir toda {weekdayName(selectedDate)}
-            </label>
-            {newTask.repeat && (
+              <select
+                value={newTask.repeatMode}
+                onChange={(e) => setNewTask({ ...newTask, repeatMode: e.target.value })}
+              >
+                <option value="none">Não repetir</option>
+                <option value="weekly">Toda {weekdayName(selectedDate)}</option>
+                <option value="interval">A cada X dias</option>
+              </select>
+              {newTask.repeatMode === 'interval' && (
+                <input
+                  className="w-minutes"
+                  type="number"
+                  min="1"
+                  placeholder="dias"
+                  value={newTask.intervalDays}
+                  onChange={(e) => setNewTask({ ...newTask, intervalDays: e.target.value })}
+                />
+              )}
+            </div>
+            {newTask.repeatMode !== 'none' && (
               <span className="item-tag" style={{ margin: 0 }}>
-                Tarefas recorrentes ainda não recebem notificação — só as avulsas, por enquanto.
+                {notifPermission
+                  ? 'As próximas ocorrências também recebem lembrete, se tiverem horário definido.'
+                  : 'Ative as notificações acima pra também receber lembrete das ocorrências futuras.'}
               </span>
             )}
           </div>
