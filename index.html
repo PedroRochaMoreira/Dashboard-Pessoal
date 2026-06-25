@@ -16,10 +16,14 @@
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function (OneSignal) {
     await OneSignal.init({
-      appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9', 
-      serviceWorkerPath: '/OneSignalSDKWorker.js',
-      serviceWorkerParam: { scope: '/onesignal/' }, 
-      disableRegister: true 
+      appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9',
+      // Força o OneSignal a buscar os arquivos estáticos de forma isolada
+      serviceWorkerOptions: {
+        scope: '/onesignal/'
+      },
+      // Caminhos customizados para evitar o registro automático na raiz
+      workerPath: '/OneSignalSDKWorker.js',
+      updaterWorkerPath: '/OneSignalSDKUpdaterWorker.js'
     });
   });
 </script>
