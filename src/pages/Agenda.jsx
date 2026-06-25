@@ -52,13 +52,27 @@ export default function Agenda() {
   const [notifPermission, setNotifPermission] = useState(null);
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifError, setNotifError] = useState('');
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
   const toppedUpRef = useRef(new Set());
+  const bannerTimerRef = useRef(null);
 
   useEffect(() => {
-    getNotificationPermission().then(setNotifPermission);
+    getNotificationPermission().then((perm) => {
+      setNotifPermission(perm);
+      // Só sugere uma vez por dispositivo. Depois disso, só dá pra
+      // ativar pela tela de Configurações.
+      if (!perm && !localStorage.getItem('agenda-notif-banner-seen')) {
+        localStorage.setItem('agenda-notif-banner-seen', '1');
+        setShowNotifBanner(true);
+        bannerTimerRef.current = setTimeout(() => setShowNotifBanner(false), 6000);
+      }
+    });
+    return () => clearTimeout(bannerTimerRef.current);
   }, []);
 
   async function handleEnableNotifications() {
+    clearTimeout(bannerTimerRef.current);
+    setShowNotifBanner(true);
     setNotifError('');
     setNotifBusy(true);
     const result = await requestNotificationPermissionSafe();
@@ -222,7 +236,7 @@ export default function Agenda() {
         </div>
       </div>
 
-      {notifPermission === false && (
+      {showNotifBanner && notifPermission === false && (
         <div className="card accent-agenda" style={{ marginBottom: 16 }}>
           <div className="settings-actions" style={{ justifyContent: 'space-between', width: '100%' }}>
             <span className="item-tag" style={{ margin: 0 }}>
@@ -233,6 +247,9 @@ export default function Agenda() {
             </button>
           </div>
           {notifError && <span className="auth-error">{notifError}</span>}
+          <span className="item-tag" style={{ margin: 0 }}>
+            Esse aviso só aparece uma vez neste dispositivo — depois, ative em Configurações.
+          </span>
         </div>
       )}
 
