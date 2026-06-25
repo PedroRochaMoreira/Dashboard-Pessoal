@@ -16,8 +16,16 @@
   window.OneSignalDeferred = window.OneSignalDeferred || [];
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
-      appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9'
+      appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9',
+      allowLocalhostAsSecureOrigin: true
     });
+    
+    // Força o prompt de permissão nativo assim que o usuário entra
+    if (!OneSignal.Notifications.isPushSupported()) {
+      console.log("Notificações não suportadas neste navegador.");
+    } else {
+      await OneSignal.Notifications.requestPermission();
+    }
   });
 </script>
   </head>
