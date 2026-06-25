@@ -17,12 +17,6 @@
   OneSignalDeferred.push(async function (OneSignal) {
     await OneSignal.init({
       appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9',
-      // 👇 Esta propriedade força o escopo correto e isolado no SDK v16
-      serviceWorkerOptions: {
-        scope: '/onesignal/'
-      },
-      // 👇 Esta propriedade avisa onde o arquivo realmente está na pasta public
-      workerPath: '/onesignal/OneSignalSDKWorker.js',
     });
   });
 </script>
