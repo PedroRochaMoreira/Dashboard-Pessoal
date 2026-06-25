@@ -13,15 +13,17 @@
     <title>Painel PP</title>
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-window.OneSignalDeferred = window.OneSignalDeferred || [];
-OneSignalDeferred.push(async function (OneSignal) {
-  await OneSignal.init({
-    appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9',
-    // 👇 Altere esta linha para incluir a pasta correspondente ao escopo:
-    serviceWorkerPath: '/onesignal/OneSignalSDKWorker.js', 
-    serviceWorkerParam: { scope: '/onesignal/' },
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function (OneSignal) {
+    await OneSignal.init({
+      appId: 'd05c9b18-eef1-401c-9d1f-72161cf0f6a9',
+      // 👇 Mude a forma de passar o escopo e o caminho para esta estrutura:
+      serviceWorkerOptions: {
+        scope: '/onesignal/'
+      },
+      workerPath: '/onesignal/OneSignalSDKWorker.js',
+    });
   });
-});
 </script>
   </head>
   <body>
