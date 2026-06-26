@@ -8,7 +8,7 @@ export default defineConfig([
   globalIgnores(['dist', 'public']),
   {
     files: ['**/*.{js,jsx}'],
-    ignores: ['api/**'],
+    ignores: ['api/**', 'src/sw.js'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
@@ -24,6 +24,13 @@ export default defineConfig([
     extends: [js.configs.recommended],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    files: ['src/sw.js'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: globals.serviceworker,
     },
   },
 ])
