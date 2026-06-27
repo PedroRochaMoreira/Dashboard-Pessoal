@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Calendar, Wallet, BookOpen, Sun, Moon, Menu, X, LogOut, Settings } from 'lucide-react';
+import { Home, Calendar, Wallet, BookOpen, Sun, Moon, Menu, X, LogOut, Settings } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../hooks/useUserPreferences';
 import Avatar from './Avatar';
 
 const links = [
+  { to: '/', label: 'Início', icon: Home, accent: null },
   { to: '/agenda', label: 'Agenda', icon: Calendar, accent: 'agenda' },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, accent: 'financeiro' },
   { to: '/estudos', label: 'Estudos', icon: BookOpen, accent: 'estudos' },
@@ -31,8 +32,11 @@ export default function Navbar() {
       <NavLink
         key={link.to}
         to={link.to}
+        end={link.to === '/'}
         onClick={onClick}
-        className={({ isActive }) => `nav-link ${link.accent} ${isActive ? `active ${link.accent}` : ''}`}
+        className={({ isActive }) =>
+          `nav-link ${link.accent || ''} ${isActive ? `active ${link.accent || ''}` : ''}`
+        }
       >
         <Icon size={15} />
         {link.label}

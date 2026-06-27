@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './components/Login';
+import Home from './pages/Home';
 import Agenda from './pages/Agenda';
 import Financeiro from './pages/Financeiro';
 import Estudos from './pages/Estudos';
@@ -17,14 +18,14 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Home />} />
               <Route path="/agenda" element={<Agenda />} />
               <Route path="/financeiro" element={<Financeiro />} />
               <Route path="/estudos" element={<Estudos />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
             </Route>
 
-            <Route path="/" element={<Navigate to="/agenda" replace />} />
-            <Route path="*" element={<Navigate to="/agenda" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

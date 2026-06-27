@@ -36,7 +36,7 @@ export default function Login() {
       } else {
         await signup(email, password);
       }
-      navigate('/agenda');
+      navigate('/');
     } catch (err) {
       setError(translateError(err.code));
     } finally {

@@ -14,6 +14,7 @@ import {
   nextOccurrences,
 } from '../utils/recurrence';
 import { tagColor, isImportantTag } from '../utils/tagColor';
+import { toggleTaskDone } from '../utils/taskActions';
 import {
   toOneSignalSendAfter,
   requestNotificationPermissionSafe,
@@ -210,26 +211,7 @@ export default function Agenda() {
   }
 
   async function toggleDone(task) {
-    if (task.recurrence) {
-      const current = task.completedDates || [];
-      const willBeDone = !current.includes(selectedDate);
-      const next = willBeDone
-        ? [...current, selectedDate]
-        : current.filter((d) => d !== selectedDate);
-
-      const notifIds = { ...(task.notificationIds || {}) };
-      if (willBeDone && notifIds[selectedDate]) {
-        await cancelTaskNotification(notifIds[selectedDate]);
-        delete notifIds[selectedDate];
-      }
-      updateItem(task.id, { completedDates: next, notificationIds: notifIds });
-    } else {
-      const nowDone = !task.done;
-      if (nowDone && task.notificationId) {
-        await cancelTaskNotification(task.notificationId);
-      }
-      updateItem(task.id, { done: nowDone });
-    }
+    await toggleTaskDone(task, selectedDate, updateItem);
   }
 
   async function handleRemove(task) {
