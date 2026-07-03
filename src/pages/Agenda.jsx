@@ -201,6 +201,7 @@ export default function Agenda() {
             title: isImportantTag(base.tag) ? `🔴 IMPORTANTE: ${base.title}` : base.title,
             message: `${base.time} · ${base.tag}`,
             sendAfter: toOneSignalSendAfter(selectedDate, base.time),
+            userId: user.uid,
           });
         }
       }

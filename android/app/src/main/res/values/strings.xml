@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Painel PP</string>
+    <string name="title_activity_main">Painel PP</string>
+    <string name="package_name">com.pedrorocha.painelpp</string>
+    <string name="custom_url_scheme">com.pedrorocha.painelpp</string>
+</resources>

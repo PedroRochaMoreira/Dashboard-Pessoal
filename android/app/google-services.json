@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "866835240930",
+    "project_id": "painel-pp",
+    "storage_bucket": "painel-pp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866835240930:android:54d4c5f7fb080ebe6a4bbb",
+        "android_client_info": {
+          "package_name": "com.pedrorocha.painelpp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "866835240930-o1mvs81uvn0di9r67mc56qd5pq1pu62r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbndPr63mpXpAfqdzExFr4UtaVZxGGqcw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "866835240930-o1mvs81uvn0di9r67mc56qd5pq1pu62r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

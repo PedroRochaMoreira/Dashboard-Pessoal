@@ -11,12 +11,15 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { auth } from '../firebase';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  usePushNotifications(user?.uid);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {

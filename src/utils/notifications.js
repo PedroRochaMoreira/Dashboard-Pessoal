@@ -93,11 +93,12 @@ export function setOptedIn(enabled) {
   }, 'timeout');
 }
 
-export async function scheduleTaskNotification({ title, message, sendAfter }) {
+export async function scheduleTaskNotification({ title, message, sendAfter, userId }) {
+  if (!userId) return null;
   const res = await fetch('/api/schedule-notification', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, message, sendAfter }),
+    body: JSON.stringify({ title, message, sendAfter, userId }),
   });
   if (!res.ok) return null;
   const data = await res.json();
