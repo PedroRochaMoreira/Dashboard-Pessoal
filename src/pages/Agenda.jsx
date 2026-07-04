@@ -18,10 +18,22 @@ import { toggleTaskDone } from '../utils/taskActions';
 import {
   toOneSignalSendAfter,
   requestNotificationPermissionSafe,
-  getNotificationPermission,
   scheduleTaskNotification,
   cancelTaskNotification,
 } from '../utils/notifications';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
+
+// Verifica permissão de notificação dependendo da plataforma
+async function checkNotifPermission() {
+  if (Capacitor.isNativePlatform()) {
+    const status = await PushNotifications.checkPermissions();
+    return status.receive === 'granted';
+  }
+  // Fallback pro navegador (PWA): usa OneSignal
+  const { getNotificationPermission } = await import('../utils/notifications');
+  return getNotificationPermission();
+}
 
 function formatSelected(dateKey) {
   const today = toKey(new Date());
@@ -58,10 +70,8 @@ export default function Agenda() {
   const bannerTimerRef = useRef(null);
 
   useEffect(() => {
-    getNotificationPermission().then((perm) => {
+    checkNotifPermission().then((perm) => {
       setNotifPermission(perm);
-      // Só sugere uma vez por dispositivo. Depois disso, só dá pra
-      // ativar pela tela de Configurações.
       if (!perm && !localStorage.getItem('agenda-notif-banner-seen')) {
         localStorage.setItem('agenda-notif-banner-seen', '1');
         setShowNotifBanner(true);
@@ -69,13 +79,9 @@ export default function Agenda() {
       }
     });
 
-    // Revalida sempre que a aba volta a ficar visível — assim, se a
-    // permissão mudou por fora do nosso botão (ex: um prompt automático
-    // do próprio OneSignal, ou o usuário mudando nas configurações do
-    // navegador), o app não fica com um estado desatualizado.
     function handleVisibility() {
       if (document.visibilityState === 'visible') {
-        getNotificationPermission().then(setNotifPermission);
+        checkNotifPermission().then(setNotifPermission);
       }
     }
     document.addEventListener('visibilitychange', handleVisibility);
@@ -91,7 +97,15 @@ export default function Agenda() {
     setShowNotifBanner(true);
     setNotifError('');
     setNotifBusy(true);
-    const result = await requestNotificationPermissionSafe();
+
+    let result;
+    if (Capacitor.isNativePlatform()) {
+      const status = await PushNotifications.requestPermissions();
+      result = status.receive === 'granted';
+    } else {
+      result = await requestNotificationPermissionSafe();
+    }
+
     setNotifBusy(false);
 
     if (result === 'timeout') {
@@ -117,13 +131,9 @@ export default function Agenda() {
         .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
     : [];
 
-  // Mantém umas 8 ocorrências futuras agendadas pra cada tarefa recorrente
-  // com horário definido. Roda uma vez por tarefa por sessão (a lista de
-  // tarefas muda toda hora por causa do tempo real, então sem essa guarda
-  // isso rodaria em loop).
   async function topUpRecurringNotifications(task) {
     if (!/^\d{1,2}:\d{2}$/.test(task.time)) return;
-    const livePermission = await getNotificationPermission();
+    const livePermission = await checkNotifPermission();
     if (!livePermission) return;
 
     const todayKey = toKey(new Date());
@@ -144,6 +154,7 @@ export default function Agenda() {
         title: isImportantTag(task.tag) ? `🔴 IMPORTANTE: ${task.title}` : task.title,
         message: `${task.time} · ${task.tag}`,
         sendAfter: toOneSignalSendAfter(dateKey, task.time),
+        userId: user.uid,
       });
       if (id) newEntries[dateKey] = id;
     }
@@ -186,10 +197,12 @@ export default function Agenda() {
       return;
     }
 
-    let notificationId = null;
-    const hasRealTime = /^\d{1,2}:\d{2}$/.test(base.time);
-    if (hasRealTime) {
-      const livePermission = await getNotificationPermission();
+let notificationId = null;
+const hasRealTime = /^\d{1,2}:\d{2}$/.test(base.time);
+if (hasRealTime) {
+  console.log('hasRealTime é true, verificando permissão...');
+  const livePermission = await checkNotifPermission();
+  console.log('livePermission resultado:', livePermission);
       if (livePermission !== notifPermission) setNotifPermission(livePermission);
 
       if (livePermission) {

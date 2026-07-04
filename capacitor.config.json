@@ -1,5 +1,9 @@
 {
   "appId": "com.pedrorocha.painelpp",
   "appName": "Painel PP",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://dashboard-pessoal-theta.vercel.app",
+    "cleartext": true
+  }
 }
