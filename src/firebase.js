@@ -1,14 +1,8 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import {
-  initializeFirestore,
-  persistentLocalCache,
-  persistentMultipleTabManager,
-} from 'firebase/firestore';
+import { getAuth, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { Capacitor } from '@capacitor/core';
 
-// Essas chaves vêm do seu projeto no Firebase Console.
-// Configure-as no arquivo .env (veja .env.example) ou nas variáveis
-// de ambiente do Vercel quando for publicar.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -20,16 +14,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// No app nativo (Android/iOS), o Firebase Auth precisa ser inicializado
+// explicitamente com persistência via IndexedDB. Sem isso, no iOS a
+// Promise do login/onAuthStateChanged nunca resolve e o app trava
+// na tela de carregamento pra sempre.
+export const auth = Capacitor.isNativePlatform()
+  ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+  : getAuth(app);
 
-// Habilita cache local persistente: os dados do Firestore ficam salvos
-// no próprio dispositivo (IndexedDB), então o app continua mostrando
-// e aceitando alterações mesmo sem internet. Quando a conexão volta,
-// tudo sincroniza automaticamente com o servidor e com os outros
-// dispositivos logados na mesma conta.
-export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({
-    tabManager: persistentMultipleTabManager(),
-  }),
-});
+export const db = getFirestore(app);
+
 export default app;

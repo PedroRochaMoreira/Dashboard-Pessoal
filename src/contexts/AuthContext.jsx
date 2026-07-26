@@ -21,11 +21,22 @@ export function AuthProvider({ children }) {
 
   usePushNotifications(user?.uid);
 
+  // Rede de segurança: se o Firebase não responder em 8 segundos,
+  // para de esperar e mostra a tela de login mesmo assim.
+  useEffect(() => {
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 8000);
+
+    return () => clearTimeout(safetyTimeout);
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });
+
     return unsubscribe;
   }, []);
 
@@ -42,7 +53,10 @@ export function AuthProvider({ children }) {
   }
 
   function reauthenticate(currentPassword) {
-    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    const credential = EmailAuthProvider.credential(
+      auth.currentUser.email,
+      currentPassword
+    );
     return reauthenticateWithCredential(auth.currentUser, credential);
   }
 
@@ -92,6 +106,10 @@ export function AuthProvider({ children }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth precisa estar dentro de um AuthProvider');
+
+  if (!ctx) {
+    throw new Error('useAuth precisa estar dentro de um AuthProvider');
+  }
+
   return ctx;
 }

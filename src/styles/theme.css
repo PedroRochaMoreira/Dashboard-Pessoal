@@ -2,33 +2,33 @@
 
 :root,
 :root[data-theme='dark'] {
-  --bg: #0b0d13;
-  --surface: #161922;
-  --surface-2: #1d212c;
-  --surface-3: #262b38;
-  --border: #2a2f3d;
-  --text: #f1ede3;
-  --text-muted: #8e92a3;
+  --bg: #0b0b0f;
+  --surface: #17171c;
+  --surface-2: #1e1e24;
+  --surface-3: #26262c;
+  --border: #2a241c;
+  --text: #f5f5f4;
+  --text-muted: #93897c;
 
-  --accent-agenda: #6fa3e8;
-  --accent-agenda-2: #4f7fd4;
-  --accent-agenda-soft: rgba(111, 163, 232, 0.16);
-  --accent-agenda-glow: rgba(111, 163, 232, 0.38);
+  --accent-agenda: #b87333;
+  --accent-agenda-2: #96592a;
+  --accent-agenda-soft: rgba(184, 115, 51, 0.16);
+  --accent-agenda-glow: rgba(184, 115, 51, 0.38);
 
-  --accent-financeiro: #6fd99a;
-  --accent-financeiro-2: #45b87a;
-  --accent-financeiro-soft: rgba(111, 217, 154, 0.16);
-  --accent-financeiro-glow: rgba(111, 217, 154, 0.38);
+  --accent-financeiro: #b87333;
+  --accent-financeiro-2: #96592a;
+  --accent-financeiro-soft: rgba(184, 115, 51, 0.16);
+  --accent-financeiro-glow: rgba(184, 115, 51, 0.38);
 
-  --accent-estudos: #f0bd6a;
-  --accent-estudos-2: #d99a3e;
-  --accent-estudos-soft: rgba(240, 189, 106, 0.16);
-  --accent-estudos-glow: rgba(240, 189, 106, 0.38);
+  --accent-estudos: #d4a373;
+  --accent-estudos-2: #b87333;
+  --accent-estudos-soft: rgba(212, 163, 115, 0.16);
+  --accent-estudos-glow: rgba(212, 163, 115, 0.38);
 
-  --danger: #f0808e;
-  --danger-2: #d4566a;
-  --danger-soft: rgba(240, 128, 142, 0.14);
-  --danger-glow: rgba(240, 128, 142, 0.4);
+  --danger: #e2665a;
+  --danger-2: #b8453a;
+  --danger-soft: rgba(226, 102, 90, 0.14);
+  --danger-glow: rgba(226, 102, 90, 0.4);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.45);
@@ -43,33 +43,33 @@
 }
 
 :root[data-theme='light'] {
-  --bg: #f5f4ef;
+  --bg: #f5f5f4;
   --surface: #ffffff;
-  --surface-2: #f2efe7;
-  --surface-3: #e8e3d6;
-  --border: #ddd9cd;
-  --text: #1b1d24;
-  --text-muted: #686b7a;
+  --surface-2: #f3efe8;
+  --surface-3: #e9e2d4;
+  --border: #ddd4c2;
+  --text: #1a1712;
+  --text-muted: #7a7166;
 
-  --accent-agenda: #2f5d92;
-  --accent-agenda-2: #1f4a7a;
-  --accent-agenda-soft: rgba(47, 93, 146, 0.1);
-  --accent-agenda-glow: rgba(47, 93, 146, 0.22);
+  --accent-agenda: #8a5225;
+  --accent-agenda-2: #6b3f1c;
+  --accent-agenda-soft: rgba(138, 82, 37, 0.1);
+  --accent-agenda-glow: rgba(138, 82, 37, 0.2);
 
-  --accent-financeiro: #1f7a45;
-  --accent-financeiro-2: #166034;
-  --accent-financeiro-soft: rgba(31, 122, 69, 0.1);
-  --accent-financeiro-glow: rgba(31, 122, 69, 0.2);
+  --accent-financeiro: #8a5225;
+  --accent-financeiro-2: #6b3f1c;
+  --accent-financeiro-soft: rgba(138, 82, 37, 0.1);
+  --accent-financeiro-glow: rgba(138, 82, 37, 0.2);
 
   --accent-estudos: #a8762a;
   --accent-estudos-2: #8c5e1c;
   --accent-estudos-soft: rgba(168, 118, 42, 0.1);
   --accent-estudos-glow: rgba(168, 118, 42, 0.2);
 
-  --danger: #b5404b;
-  --danger-2: #963038;
-  --danger-soft: rgba(181, 64, 75, 0.08);
-  --danger-glow: rgba(181, 64, 75, 0.18);
+  --danger: #b0453a;
+  --danger-2: #8f362c;
+  --danger-soft: rgba(176, 69, 58, 0.08);
+  --danger-glow: rgba(176, 69, 58, 0.18);
 
   --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.05);
   --shadow-md: 0 10px 28px rgba(20, 20, 20, 0.08);
@@ -169,6 +169,7 @@ a {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  padding-top: env(safe-area-inset-top);
 }
 
 /* ---------- Navbar ---------- */
@@ -330,12 +331,91 @@ a {
   background: var(--surface-2);
 }
 
+/* ---------- Bottom nav (mobile) ---------- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  display: none;
+  background: color-mix(in srgb, var(--surface) var(--glass-alpha), transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20%;
+  height: 2px;
+  background: var(--accent-agenda);
+  border-radius: 0 0 3px 3px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 10px -2px var(--accent-agenda-glow);
+  z-index: 1;
+}
+
+.bottom-nav-item {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding-top: 4px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+}
+.bottom-nav-item svg {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease;
+}
+
+.bottom-nav-item.active {
+  color: var(--text);
+}
+
+.bottom-nav-item.active svg {
+  color: var(--accent-agenda);
+  transform: translateY(-2px) scale(1.1);
+}
+
+.bottom-nav-item:active svg {
+  transform: scale(0.9);
+}
+
 @media (max-width: 720px) {
   .navbar-links {
     display: none;
   }
-  .hamburger-btn {
+  .bottom-nav {
     display: flex;
+  }
+  .page {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  /* Evita o zoom automático do iOS ao focar em campos de texto */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  .goal-row input,
+  .repeat-toggle-days input {
+    width: 68px;
+  }
+  .category-budget-top input,
+  .budget-edit input {
+    width: 90px;
   }
 }
 
@@ -425,7 +505,7 @@ a {
 
 .item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   background: var(--surface-2);
   border-radius: var(--radius-md);
@@ -447,6 +527,8 @@ a {
   font-size: 13px;
   line-height: 1.3;
   font-weight: 500;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .item-title.done {
@@ -467,6 +549,7 @@ a {
   font-size: 11px;
   color: var(--text-muted);
   min-width: 40px;
+  flex-shrink: 0;
 }
 
 .check-btn {
@@ -639,7 +722,7 @@ a {
 .add-btn {
   background: linear-gradient(135deg, var(--accent-agenda), var(--accent-agenda-2));
   border: none;
-  color: #0c1018;
+  color: #1c1108;
   border-radius: var(--radius-sm);
   padding: 9px 12px;
   cursor: pointer;
@@ -737,7 +820,7 @@ a {
 
 .calendar-day-selected {
   background: linear-gradient(135deg, var(--accent-agenda), var(--accent-agenda-2));
-  color: #0c1018;
+  color: #1c1108;
   font-weight: 700;
   box-shadow: 0 4px 16px -2px var(--accent-agenda-glow);
 }
@@ -752,7 +835,7 @@ a {
 }
 
 .calendar-day-selected .calendar-dot {
-  background: #0c1018;
+  background: #1c1108;
 }
 
 .week-grid {
@@ -790,7 +873,7 @@ a {
 
 .week-day-selected .week-day-name,
 .calendar-day-selected .week-day-name {
-  color: #0c1018;
+  color: #1c1108;
 }
 
 .week-day-num {
@@ -1299,7 +1382,7 @@ a {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--accent-agenda), var(--accent-agenda-2));
-  color: #0c1018;
+  color: #1c1108;
   border: none;
   font-weight: 700;
   box-shadow: 0 4px 16px -4px var(--accent-agenda-glow);
@@ -1433,7 +1516,7 @@ a {
 
 .auth-submit {
   background: linear-gradient(135deg, var(--accent-agenda), var(--accent-agenda-2));
-  color: #0c1018;
+  color: #1c1108;
   border: none;
   border-radius: var(--radius-sm);
   padding: 12px;
@@ -1486,4 +1569,9 @@ a {
   justify-content: center;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* Esconde o navbar antigo quando roda dentro do Electron */
+body.is-electron .navbar {
+  display: none;
 }

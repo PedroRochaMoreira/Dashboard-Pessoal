@@ -8,12 +8,14 @@ import Agenda from './pages/Agenda';
 import Financeiro from './pages/Financeiro';
 import Estudos from './pages/Estudos';
 import Configuracoes from './pages/Configuracoes';
+import ElectronMenu from './components/ElectronMenu';
 
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ElectronMenu />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
 

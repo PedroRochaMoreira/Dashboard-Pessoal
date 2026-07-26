@@ -22,24 +22,58 @@ import {
   cancelTaskNotification,
 } from '../utils/notifications';
 import { Capacitor } from '@capacitor/core';
-import { PushNotifications } from '@capacitor/push-notifications';
 
-// Verifica permissão de notificação dependendo da plataforma
+// Cria o canal de notificacao no Android (precisa existir antes de agendar)
+async function initNotifChannel() {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const { LocalNotifications } = await import('@capacitor/local-notifications');
+    await LocalNotifications.createChannel({
+      id: 'painel-pp-v3',
+      name: 'Painel PP',
+      importance: 5,
+      vibration: true,
+      visibility: 1,
+    });
+  } catch {
+    // ignora se canal ja existe
+  }
+}
+
+// Verifica se a permissao ja foi concedida
 async function checkNotifPermission() {
   if (Capacitor.isNativePlatform()) {
-    const status = await PushNotifications.checkPermissions();
-    return status.receive === 'granted';
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      const status = await LocalNotifications.checkPermissions();
+      return status.display === 'granted';
+    } catch {
+      return false;
+    }
   }
-  // Fallback pro navegador (PWA): usa OneSignal
   const { getNotificationPermission } = await import('../utils/notifications');
   return getNotificationPermission();
+}
+
+// Pede a permissao ao usuario
+async function requestNotifPermission() {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications');
+      const status = await LocalNotifications.requestPermissions();
+      return status.display === 'granted';
+    } catch {
+      return false;
+    }
+  }
+  return requestNotificationPermissionSafe();
 }
 
 function formatSelected(dateKey) {
   const today = toKey(new Date());
   const date = new Date(dateKey + 'T00:00:00');
   const label = `${WEEKDAY_LONG[date.getDay()]}, ${date.getDate()} de ${date.toLocaleDateString('pt-BR', { month: 'long' })}`;
-  return dateKey === today ? `Hoje — ${label}` : label;
+  return dateKey === today ? `Hoje - ${label}` : label;
 }
 
 function TagChip({ tag }) {
@@ -70,6 +104,8 @@ export default function Agenda() {
   const bannerTimerRef = useRef(null);
 
   useEffect(() => {
+    initNotifChannel();
+
     checkNotifPermission().then((perm) => {
       setNotifPermission(perm);
       if (!perm && !localStorage.getItem('agenda-notif-banner-seen')) {
@@ -98,23 +134,16 @@ export default function Agenda() {
     setNotifError('');
     setNotifBusy(true);
 
-    let result;
-    if (Capacitor.isNativePlatform()) {
-      const status = await PushNotifications.requestPermissions();
-      result = status.receive === 'granted';
-    } else {
-      result = await requestNotificationPermissionSafe();
-    }
-
+    const result = await requestNotifPermission();
     setNotifBusy(false);
 
     if (result === 'timeout') {
-      setNotifError('Não conseguimos falar com o serviço de notificações agora. Verifique sua internet (ou se algum bloqueador de anúncio está travando o site) e tente de novo.');
+setNotifError('Não conseguimos falar com o serviço de notificações agora. Tente de novo em alguns segundos.');
       return;
     }
     setNotifPermission(result);
     if (!result) {
-      setNotifError('Seu navegador não liberou a notificação. Se você já negou antes, precisa permitir manualmente nas configurações de notificação do navegador/celular para este site.');
+setNotifError('Permissão negada. Habilite as notificações nas configurações do seu dispositivo para este app.');
     }
   }
 
@@ -151,9 +180,10 @@ export default function Agenda() {
       if (target <= new Date()) continue;
 
       const id = await scheduleTaskNotification({
-        title: isImportantTag(task.tag) ? `🔴 IMPORTANTE: ${task.title}` : task.title,
-        message: `${task.time} · ${task.tag}`,
+        title: isImportantTag(task.tag) ? `IMPORTANTE: ${task.title}` : task.title,
+        message: `${task.time} - ${task.tag}`,
         sendAfter: toOneSignalSendAfter(dateKey, task.time),
+        at: target,
         userId: user.uid,
       });
       if (id) newEntries[dateKey] = id;
@@ -197,12 +227,10 @@ export default function Agenda() {
       return;
     }
 
-let notificationId = null;
-const hasRealTime = /^\d{1,2}:\d{2}$/.test(base.time);
-if (hasRealTime) {
-  console.log('hasRealTime é true, verificando permissão...');
-  const livePermission = await checkNotifPermission();
-  console.log('livePermission resultado:', livePermission);
+    let notificationId = null;
+    const hasRealTime = /^\d{1,2}:\d{2}$/.test(base.time);
+    if (hasRealTime) {
+      const livePermission = await checkNotifPermission();
       if (livePermission !== notifPermission) setNotifPermission(livePermission);
 
       if (livePermission) {
@@ -211,11 +239,13 @@ if (hasRealTime) {
         target.setHours(h, m, 0, 0);
         if (target > new Date()) {
           notificationId = await scheduleTaskNotification({
-            title: isImportantTag(base.tag) ? `🔴 IMPORTANTE: ${base.title}` : base.title,
-            message: `${base.time} · ${base.tag}`,
+            title: isImportantTag(base.tag) ? `IMPORTANTE: ${base.title}` : base.title,
+            message: `${base.time} - ${base.tag}`,
             sendAfter: toOneSignalSendAfter(selectedDate, base.time),
+            at: target,
             userId: user.uid,
           });
+          console.log('Notificacao agendada, id:', notificationId);
         }
       }
     }
@@ -256,7 +286,7 @@ if (hasRealTime) {
         <div className="card accent-agenda" style={{ marginBottom: 16 }}>
           <div className="settings-actions" style={{ justifyContent: 'space-between', width: '100%' }}>
             <span className="item-tag" style={{ margin: 0 }}>
-              Ative as notificações pra receber lembrete dos seus compromissos, mesmo com o app fechado.
+             Ative as notificações pra receber lembrete dos seus compromissos, mesmo com o app fechado.
             </span>
             <button className="btn btn-primary" onClick={handleEnableNotifications} disabled={notifBusy}>
               {notifBusy ? 'Ativando...' : 'Ativar notificações'}
@@ -264,7 +294,7 @@ if (hasRealTime) {
           </div>
           {notifError && <span className="auth-error">{notifError}</span>}
           <span className="item-tag" style={{ margin: 0 }}>
-            Esse aviso só aparece uma vez neste dispositivo — depois, ative em Configurações.
+            Esse aviso só aparece uma vez neste dispositivo. 
           </span>
         </div>
       )}
@@ -292,7 +322,7 @@ if (hasRealTime) {
                   <button
                     className={`check-btn ${t.done ? 'done' : ''}`}
                     onClick={() => toggleDone(t)}
-                    aria-label="Marcar como concluída"
+                    aria-label="Marcar como concluida"
                   >
                     {t.done && <Check size={12} />}
                   </button>
@@ -322,12 +352,8 @@ if (hasRealTime) {
       ) : (
         <>
           <div className="view-toggle" style={{ marginBottom: 16 }}>
-            <button className={viewMode === 'mes' ? 'active' : ''} onClick={() => setViewMode('mes')}>
-              Mês
-            </button>
-            <button className={viewMode === 'semana' ? 'active' : ''} onClick={() => setViewMode('semana')}>
-              Semana
-            </button>
+            <button className={viewMode === 'mes' ? 'active' : ''} onClick={() => setViewMode('mes')}>Mes</button>
+            <button className={viewMode === 'semana' ? 'active' : ''} onClick={() => setViewMode('semana')}>Semana</button>
           </div>
 
           <div className="card accent-agenda">
@@ -355,7 +381,7 @@ if (hasRealTime) {
                     <button
                       className={`check-btn ${done ? 'done' : ''}`}
                       onClick={() => toggleDone(t)}
-                      aria-label={done ? 'Marcar como pendente' : 'Marcar como concluída'}
+                      aria-label={done ? 'Marcar como pendente' : 'Marcar como concluida'}
                     >
                       {done && <Check size={12} />}
                     </button>
@@ -413,7 +439,7 @@ if (hasRealTime) {
                 value={newTask.repeatMode}
                 onChange={(e) => setNewTask({ ...newTask, repeatMode: e.target.value })}
               >
-                <option value="none">Não repetir</option>
+                <option value="none">Nao repetir</option>
                 <option value="weekly">Toda {weekdayName(selectedDate)}</option>
                 <option value="interval">A cada X dias</option>
               </select>
@@ -442,7 +468,7 @@ if (hasRealTime) {
 
           {legacyTasks.length > 0 && (
             <div className="card accent-agenda" style={{ marginTop: 16 }}>
-              <span className="page-comment">// criadas antes do calendário — sem data definida</span>
+              <span className="page-comment">// criadas antes do calendario - sem data definida</span>
               <div className="list">
                 {legacyTasks.map((t) => (
                   <div className="item" key={t.id}>

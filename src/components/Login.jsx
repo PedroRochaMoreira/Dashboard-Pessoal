@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
 
 function translateError(code) {
   const map = {
@@ -11,6 +13,7 @@ function translateError(code) {
     'auth/invalid-credential': 'E-mail ou senha incorretos.',
     'auth/email-already-in-use': 'Já existe uma conta com esse e-mail.',
     'auth/weak-password': 'A senha precisa ter pelo menos 6 caracteres.',
+    'auth/too-many-requests': 'Muitas tentativas. Aguarde um pouco antes de tentar de novo.',
   };
   return map[code] || 'Algo deu errado. Tente novamente.';
 }
@@ -25,6 +28,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [resetSending, setResetSending] = useState(false);
+  const [resetMsg, setResetMsg] = useState('');
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -44,6 +50,24 @@ export default function Login() {
     }
   }
 
+  async function handleForgotPassword() {
+    setError('');
+    setResetMsg('');
+    if (!email.trim()) {
+      setError('Digite seu e-mail no campo acima primeiro.');
+      return;
+    }
+    setResetSending(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setResetMsg('Enviamos um link de redefinição para o seu e-mail. Confira também a caixa de spam.');
+    } catch (err) {
+      setError(translateError(err.code));
+    } finally {
+      setResetSending(false);
+    }
+  }
+
   return (
     <div className="auth-wrap">
       <form className="auth-card" onSubmit={handleSubmit}>
@@ -57,6 +81,7 @@ export default function Login() {
         </div>
 
         {error && <div className="auth-error">{error}</div>}
+        {resetMsg && <span className="settings-success">{resetMsg}</span>}
 
         <div className="auth-field">
           <label htmlFor="email">E-mail</label>
@@ -92,6 +117,18 @@ export default function Login() {
             </button>
           </div>
         </div>
+
+        {mode === 'login' && (
+          <button
+            type="button"
+            className="auth-toggle"
+            style={{ textAlign: 'right', background: 'none', border: 'none', color: 'var(--accent-agenda)', cursor: 'pointer', padding: 0, fontSize: 12 }}
+            onClick={handleForgotPassword}
+            disabled={resetSending}
+          >
+            {resetSending ? 'Enviando...' : 'Esqueceu a senha?'}
+          </button>
+        )}
 
         <button className="auth-submit" type="submit" disabled={submitting}>
           {submitting ? 'Enviando...' : mode === 'login' ? 'Entrar' : 'Criar conta'}

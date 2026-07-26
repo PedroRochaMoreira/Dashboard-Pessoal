@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Settings, Download, AlertTriangle, Camera, Bell } from 'lucide-react';
+import { Settings, Download, AlertTriangle, Camera, Bell, Volume2, PlayCircle } from 'lucide-react';
 import { collection, deleteDoc, doc, getDoc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserPreferences } from '../hooks/useUserPreferences';
@@ -10,10 +10,25 @@ import {
   requestNotificationPermissionSafe,
   getOptedIn,
   setOptedIn,
+  scheduleTestNotification,
 } from '../utils/notifications';
 import Avatar from '../components/Avatar';
 
 const COLLECTIONS = ['tasks', 'transactions', 'subjects', 'recurringTransactions', 'studyDays'];
+
+const SOUND_OPTIONS = [
+  { value: 'default', label: 'Padrão do sistema' },
+  { value: 'notificacao1.wav', label: 'Ding' },
+  { value: 'notificacao2.wav', label: 'Alerta triplo' },
+  { value: 'notificacao3.wav', label: 'Suave' },
+  { value: 'notificacao4.wav', label: 'Alarme' },
+  { value: 'notificacao5.wav', label: 'Sino' },
+  { value: 'notificacao6.wav', label: 'Positivo' },
+  { value: 'notificacao7.wav', label: 'Retrô' },
+  { value: 'notificacao8.wav', label: 'Marimba' },
+  { value: 'notificacao9.wav', label: 'Descendente' },
+  { value: 'notificacao10.wav', label: 'Urgente' },
+];
 
 export default function Configuracoes() {
   const { user, updateDisplayName, changePassword, reauthenticate, deleteAccountWithPassword } = useAuth();
@@ -43,10 +58,35 @@ export default function Configuracoes() {
   const [notifBusy, setNotifBusy] = useState(false);
   const [notifError, setNotifError] = useState('');
 
+  const [notifSound, setNotifSound] = useState(
+    localStorage.getItem('painelpp-notif-sound') || 'default'
+  );
+  const [testMsg, setTestMsg] = useState('');
+  const [testBusy, setTestBusy] = useState(false);
+
   useEffect(() => {
     getNotificationPermission().then(setNotifPermission);
     getOptedIn().then(setNotifEnabled);
   }, []);
+
+  function handleSoundChange(e) {
+    const value = e.target.value;
+    setNotifSound(value);
+    localStorage.setItem('painelpp-notif-sound', value);
+    setTestMsg('');
+  }
+
+  async function handleTestSound() {
+    setTestBusy(true);
+    setTestMsg('');
+    const id = await scheduleTestNotification();
+    setTestBusy(false);
+    if (id) {
+      setTestMsg('Agendado! Feche o app AGORA (não só minimizar) e espere 8 segundos.');
+    } else {
+      setTestMsg('Não consegui agendar. Confirma se as notificações estão ativadas acima.');
+    }
+  }
 
   async function handleToggleNotifications() {
     setNotifError('');
@@ -291,6 +331,34 @@ export default function Configuracoes() {
           </button>
         </div>
         {notifError && <span className="auth-error">{notifError}</span>}
+
+        <hr className="settings-divider" />
+
+        <div className="settings-row">
+          <label>
+            <Volume2 size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            Som da notificação
+          </label>
+          <select id="notif-sound" value={notifSound} onChange={handleSoundChange}>
+            {SOUND_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="settings-actions">
+          <button className="btn" onClick={handleTestSound} disabled={testBusy}>
+            <PlayCircle size={14} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            {testBusy ? 'Agendando...' : 'Testar som agora (8s)'}
+          </button>
+        </div>
+        {testMsg && <span className="settings-success">{testMsg}</span>}
+
+        <p className="item-tag" style={{ margin: 0 }}>
+          O volume do som segue o volume de toques e alertas do seu celular — o app não tem como alterar isso.
+        </p>
       </div>
 
       {/* Preferências */}

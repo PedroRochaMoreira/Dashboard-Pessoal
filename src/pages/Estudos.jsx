@@ -9,7 +9,7 @@ import { toKey } from '../utils/dateKey';
 import PomodoroTimer from '../components/PomodoroTimer';
 import StudyHeatmap from '../components/StudyHeatmap';
 
-const SUBJECT_COLORS = ['#7aa2d4', '#7fb88a', '#d4a95e', '#b98fd4', '#d4707a', '#6fc2c9', '#c9c46f'];
+const SUBJECT_COLORS = ['#b87333', '#d4a373', '#e0b15c', '#c96f4a', '#a67c52', '#8a5225', '#6b4a35'];
 
 function formatMinutes(mins) {
   const h = Math.floor(mins / 60);
